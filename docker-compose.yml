@@ -7,7 +7,7 @@ services:
     restart: unless-stopped
     environment:
       # Server Configuration
-      DOMAIN: "http://localhost:80"
+      DOMAIN: "https://pass.shanto.top"  # Production domain with HTTPS
       ROCKET_PORT: 80
       INVITATION_ORG_NAME: "PassSHANTO"
       # Enable web vault & point to extracted bw_web build folder
@@ -41,3 +41,5 @@ services:
       - ./data:/data
     ports:
       - "80:80"
+      # Uncomment the line below when you set up HTTPS with a reverse proxy
+      # - "443:443"
