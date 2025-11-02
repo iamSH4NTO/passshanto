@@ -26,4 +26,4 @@ elif [ -d /etc/bitwarden_rs.d ]; then
     done
 fi
 
-exec /vaultwarden "${@}"
+exec /passshanto "${@}"
