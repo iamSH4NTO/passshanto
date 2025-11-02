@@ -1,0 +1,48 @@
+version: "3.9"
+
+services:
+  vaultwarden:
+    build:
+      context: .
+      dockerfile: Dockerfile.x86_64
+    image: passshanto:x86_64
+    container_name: passshanto
+    restart: unless-stopped
+    environment:
+      # Server Configuration
+      DOMAIN: "https://pass.shanto.top"  # Production domain with HTTPS
+      ROCKET_PORT: 80
+      INVITATION_ORG_NAME: "PassSHANTO"
+      # Enable web vault & point to extracted bw_web build folder
+      WEB_VAULT_ENABLED: "true"
+      WEB_VAULT_FOLDER: /web-vault
+
+      # Database
+      DATABASE_URL: /data/db.sqlite
+      
+      # Optional: Admin token (set your own)
+      ADMIN_TOKEN: "admin123"
+
+      # SMTP Configuration (configure these for your email provider)
+      SMTP_HOST: live.smtp.mailtrap.io
+      SMTP_FROM: pass@shanto.top
+      SMTP_FROM_NAME: "PassSHANTO"
+      SMTP_SECURITY: "starttls"
+      SMTP_PORT: 587
+      SMTP_USERNAME: smtp@mailtrap.io
+      SMTP_PASSWORD: ef7157f5b93abcde6d233101d8f3c908
+      # Optional SMTP settings:
+      # SMTP_TIMEOUT: 15
+      # SMTP_AUTH_MECHANISM: "Plain"
+      # HELLO_NAME: "vaultwarden"
+      
+      # Other optional settings
+      SIGNUPS_ALLOWED: "true"
+      LOG_FILE: "/data/vaultwarden.log"
+    volumes:
+      # Persistent storage for database & logs
+      - ./data:/data
+    ports:
+      - "80:80"
+      # Uncomment the line below when you set up HTTPS with a reverse proxy
+      # - "443:443"

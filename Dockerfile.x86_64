@@ -1,0 +1,95 @@
+# Dockerfile optimized for x86_64 architecture
+# syntax=docker/dockerfile:1
+
+####################### CUSTOM WEB-VAULT BUILD IMAGE #######################
+# Build your custom web-vault instead of using the pre-built one
+FROM node:18-alpine AS web-vault-build
+
+# Create app directory
+WORKDIR /app
+
+# Simple build process for static files
+# Copy web-vault source code from the build context
+COPY web-vault/ ./dist/
+
+########################## BUILD IMAGE ##########################
+FROM rust:1.91.0-slim-trixie AS build
+
+WORKDIR /app
+
+# Install build dependencies
+RUN apt-get update && \
+    apt-get install -y \
+        --no-install-recommends \
+        clang \
+        pkg-config \
+        git \
+        gcc \
+        libpq-dev \
+        libpq5 \
+        libssl-dev \
+        libmariadb-dev \
+        zlib1g-dev && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Set environment variables
+ENV DEBIAN_FRONTEND=noninteractive \
+    LANG=C.UTF-8 \
+    TZ=UTC \
+    TERM=xterm-256color \
+    CARGO_HOME="/root/.cargo"
+
+# Create CARGO_HOME folder and don't download rust docs
+RUN mkdir -pv "${CARGO_HOME}" && \
+    rustup set profile minimal
+
+# Copies the complete project
+COPY . .
+
+# Build time arguments
+ARG CARGO_PROFILE=release
+ARG DB=sqlite,mysql,postgresql
+
+# Build the project
+RUN cargo build --features ${DB} --profile "${CARGO_PROFILE}" && \
+    if [[ "${CARGO_PROFILE}" == "dev" ]] ; then \
+        ln -vfsr "/app/target/debug" /app/target/final ; \
+    else \
+        ln -vfsr "/app/target/${CARGO_PROFILE}" /app/target/final ; \
+    fi
+
+######################## RUNTIME IMAGE  ########################
+FROM debian:trixie-slim
+
+ENV ROCKET_PROFILE="release" \
+    ROCKET_ADDRESS=0.0.0.0 \
+    ROCKET_PORT=80 \
+    DEBIAN_FRONTEND=noninteractive
+
+# Create data folder and Install needed libraries
+RUN mkdir /data && \
+    apt-get update && apt-get install -y \
+        --no-install-recommends \
+        ca-certificates \
+        curl \
+        libmariadb-dev \
+        libpq5 \
+        openssl && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+VOLUME /data
+EXPOSE 80
+
+# Copies the files from the context (Rocket.toml file and web-vault)
+# and the binary from the "build" stage to the current stage
+WORKDIR /
+
+COPY docker/healthcheck.sh docker/start.sh /
+COPY --from=web-vault-build /app/dist ./web-vault
+COPY --from=build /app/target/final/passshanto .
+
+HEALTHCHECK --interval=60s --timeout=10s CMD ["/healthcheck.sh"]
+
+CMD ["/start.sh"]
