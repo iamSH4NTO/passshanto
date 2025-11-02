@@ -12,5 +12,5 @@ data
 # Environment file
 .env
 
-# Web vault
-web-vault
+# # Web vault
+# web-vault
