@@ -2,7 +2,7 @@ version: "3.9"
 
 services:
   vaultwarden:
-    image: iamsh4nto/passshanto:latest
+    image: iamsh4nto/passshanto:linux-amd64
     container_name: passshanto
     restart: unless-stopped
     environment:
